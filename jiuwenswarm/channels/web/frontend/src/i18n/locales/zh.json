@@ -32,6 +32,7 @@
     "settings": "设置",
     "config": "配置信息",
     "browser": "浏览器服务",
+    "roboticArm": "机械臂",
     "logs": "日志",
     "update": "更新"
   },
@@ -1305,6 +1306,40 @@
       "startFailed": "启动浏览器服务失败",
       "startFailedWithCode": "浏览器服务启动失败，返回码 {{code}}",
       "startFailedWithMessage": "浏览器服务启动失败：{{message}}"
+    }
+  },
+  "roboticArm": {
+    "title": "机械臂",
+    "subtitle": "配置机械臂子代理使用的相机 / 机械臂参数。",
+    "refresh": "刷新",
+    "sectionTitle": "子代理开关",
+    "enable": "启用机械臂子代理",
+    "enableDesc": "启用后可在对话中委派给 robotic_arm_agent 执行操作任务。",
+    "modelHelp": "SubTaskExecutorRegistry 中注册的名字，如 so101_rekep。",
+    "paramsSectionTitle": "执行器参数（step_executor_params）",
+    "rawParamsLabel": "参数（JSON）",
+    "rawParamsHelp": "未识别的 step_executor_model 使用原始 JSON 编辑参数。",
+    "save": "保存",
+    "fields": {
+      "workspaceMin": "工作空间下界 workspace_min (x, y, z)",
+      "workspaceMax": "工作空间上界 workspace_max (x, y, z)",
+      "cameraMatrixPath": "相机内参路径 camera_matrix_path",
+      "depthScalePath": "深度比例路径 depth_scale_path",
+      "extrinsicsPath": "相机-基座外参路径 extrinsics_path",
+      "urdfPath": "机械臂 URDF 路径 urdf_path",
+      "port": "机械臂串口 port",
+      "samCheckpointPath": "MobileSAM 权重路径 sam_checkpoint_path",
+      "vlmApiKey": "ReKep VLM API Key vlm_api_key",
+      "vlmModel": "ReKep VLM 模型 vlm_model"
+    },
+    "success": {
+      "saved": "机械臂配置已保存"
+    },
+    "errors": {
+      "loadConfig": "加载机械臂配置失败",
+      "saveConfig": "保存机械臂配置失败",
+      "modelRequired": "启用机械臂子代理时必须填写 step_executor_model",
+      "invalidParamsJson": "参数 JSON 格式不正确"
     }
   },
   "logsPanel": {

@@ -439,6 +439,14 @@ react:
     browser_agent:
       enabled: true
       # max_iterations: 15
+    # 机械臂子代理：默认不启用，需要真实硬件 + 标定文件才能用。
+    # step_executor_model 是 SubTaskExecutorRegistry 里注册的名字（如 so101_rekep），
+    # step_executor_params 是对应 vendor 实现的构造参数，字段因型号而异。
+    robotic_arm_agent:
+      enabled: false
+      step_executor_model: ""
+      step_executor_params: {}
+      # max_iterations: 30
   answer_chunk_size: 500
   stream_chunk_threshold: 50
   stream_character_threshold: 2000

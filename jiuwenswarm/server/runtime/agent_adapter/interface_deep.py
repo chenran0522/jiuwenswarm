@@ -75,6 +75,8 @@ from openjiuwen.harness.rails.context_engineer.context_assemble_rail import Cont
 from openjiuwen.harness.rails.context_engineer.context_processor_rail import ContextProcessorRail
 from openjiuwen.harness.subagents.browser_agent import build_browser_agent_config
 from openjiuwen.harness.subagents.research_agent import build_research_agent_config
+from openjiuwen.harness.subagents.robotic_arm_agent import build_robotic_arm_agent_config
+from openjiuwen.harness.tools.robotic_arm.config import RoboticArmRuntimeSettings
 from openjiuwen.harness.tools import (
     WebFetchWebpageTool,
     WebFreeSearchTool,
@@ -1714,6 +1716,55 @@ class JiuWenSwarmDeepAdapter:
             logger.info(
                 "[JiuWenSwarmDeepAdapter] browser_agent config detected but browser runtime is not enabled; "
                 "skipping browser subagent registration"
+            )
+
+        robotic_arm_agent_cfg = (
+            subagents_cfg.get("robotic_arm_agent") if isinstance(subagents_cfg, dict) else {}
+        )
+        if self._is_subagent_enabled(robotic_arm_agent_cfg):
+            step_executor_model = (
+                str(robotic_arm_agent_cfg.get("step_executor_model") or "").strip()
+                if isinstance(robotic_arm_agent_cfg, dict)
+                else ""
+            )
+            step_executor_params = (
+                robotic_arm_agent_cfg.get("step_executor_params")
+                if isinstance(robotic_arm_agent_cfg, dict)
+                else None
+            )
+            if not step_executor_model:
+                logger.warning(
+                    "[JiuWenSwarmDeepAdapter] robotic_arm_agent enabled but step_executor_model "
+                    "is not configured; skipping robotic arm subagent registration"
+                )
+            else:
+                arm_settings = RoboticArmRuntimeSettings(
+                    step_executor_model=step_executor_model,
+                    step_executor_params=dict(step_executor_params or {}),
+                )
+                subagents.append(
+                    build_robotic_arm_agent_config(
+                        model,
+                        workspace=workspace,
+                        language=resolved_language,
+                        max_iterations=parse_int(
+                            (
+                                robotic_arm_agent_cfg.get("max_iterations")
+                                if isinstance(robotic_arm_agent_cfg, dict)
+                                else None
+                            ),
+                            react_cfg.get("max_iterations", 30),
+                        ),
+                        settings=arm_settings,
+                    )
+                )
+        elif (
+            isinstance(subagents_cfg, dict)
+            and isinstance(robotic_arm_agent_cfg, dict)
+            and robotic_arm_agent_cfg
+        ):
+            logger.debug(
+                "[JiuWenSwarmDeepAdapter] robotic_arm_agent config present but not enabled; skipping"
             )
 
         # ── 加载自定义 agent（.jiuwenswarm/agents/*.md）──

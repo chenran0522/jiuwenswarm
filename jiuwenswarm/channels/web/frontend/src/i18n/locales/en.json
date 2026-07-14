@@ -32,6 +32,7 @@
     "settings": "Settings",
     "config": "Configuration",
     "browser": "Browser Service",
+    "roboticArm": "Robotic Arm",
     "logs": "Logs",
     "update": "Updates"
   },
@@ -1304,6 +1305,40 @@
       "startFailed": "Failed to start browser service",
       "startFailedWithCode": "Browser service failed to start, return code {{code}}",
       "startFailedWithMessage": "Browser service failed to start: {{message}}"
+    }
+  },
+  "roboticArm": {
+    "title": "Robotic Arm",
+    "subtitle": "Configure the camera / robotic arm parameters used by the robotic arm sub-agent.",
+    "refresh": "Refresh",
+    "sectionTitle": "Sub-agent toggle",
+    "enable": "Enable robotic arm sub-agent",
+    "enableDesc": "When enabled, tasks can be delegated to robotic_arm_agent from chat.",
+    "modelHelp": "Name registered in SubTaskExecutorRegistry, e.g. so101_rekep.",
+    "paramsSectionTitle": "Executor parameters (step_executor_params)",
+    "rawParamsLabel": "Parameters (JSON)",
+    "rawParamsHelp": "Unrecognized step_executor_model values fall back to raw JSON editing.",
+    "save": "Save",
+    "fields": {
+      "workspaceMin": "Workspace lower bound workspace_min (x, y, z)",
+      "workspaceMax": "Workspace upper bound workspace_max (x, y, z)",
+      "cameraMatrixPath": "Camera intrinsics path camera_matrix_path",
+      "depthScalePath": "Depth scale path depth_scale_path",
+      "extrinsicsPath": "Camera-to-base extrinsics path extrinsics_path",
+      "urdfPath": "Robot URDF path urdf_path",
+      "port": "Robot serial port port",
+      "samCheckpointPath": "MobileSAM checkpoint path sam_checkpoint_path",
+      "vlmApiKey": "ReKep VLM API key vlm_api_key",
+      "vlmModel": "ReKep VLM model vlm_model"
+    },
+    "success": {
+      "saved": "Robotic arm config saved"
+    },
+    "errors": {
+      "loadConfig": "Failed to load robotic arm config",
+      "saveConfig": "Failed to save robotic arm config",
+      "modelRequired": "step_executor_model is required when the robotic arm sub-agent is enabled",
+      "invalidParamsJson": "Parameters JSON is invalid"
     }
   },
   "logsPanel": {

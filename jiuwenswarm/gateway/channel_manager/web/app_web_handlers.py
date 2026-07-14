@@ -52,6 +52,7 @@ from jiuwenswarm.common.config import (
     update_channel_in_config,
     replace_channel_subsection_with_cleanup,
     update_browser_in_config,
+    update_robotic_arm_in_config,
     update_preferred_language_in_config,
     update_context_engine_enabled_in_config,
     update_kv_cache_affinity_enabled_in_config,
@@ -3916,6 +3917,101 @@ def _register_web_handlers(bind: WebHandlersBindParams) -> None:
 
         await channel.send_response(ws, req_id, ok=True, payload={"chrome_path": chrome_path, "headless": headless})
 
+    async def _arm_get_config(ws, req_id, params, session_id):
+        """读 react.subagents.robotic_arm_agent 并返回给前端。"""
+        try:
+            config_base = get_config()
+        except FileNotFoundError:
+            await channel.send_response(
+                ws,
+                req_id,
+                ok=True,
+                payload={
+                    "enabled": False,
+                    "step_executor_model": "",
+                    "step_executor_params": {},
+                    "max_iterations": None,
+                },
+            )
+            return
+
+        react_cfg = config_base.get("react", {}) if isinstance(config_base, dict) else {}
+        subagents_cfg = react_cfg.get("subagents", {}) if isinstance(react_cfg, dict) else {}
+        arm_cfg = subagents_cfg.get("robotic_arm_agent", {}) if isinstance(subagents_cfg, dict) else {}
+        if not isinstance(arm_cfg, dict):
+            arm_cfg = {}
+
+        step_executor_params = arm_cfg.get("step_executor_params", {})
+        if not isinstance(step_executor_params, dict):
+            step_executor_params = {}
+
+        await channel.send_response(
+            ws,
+            req_id,
+            ok=True,
+            payload={
+                "enabled": bool(arm_cfg.get("enabled", False)),
+                "step_executor_model": str(arm_cfg.get("step_executor_model") or ""),
+                "step_executor_params": step_executor_params,
+                "max_iterations": arm_cfg.get("max_iterations"),
+            },
+        )
+
+    async def _arm_set_config(ws, req_id, params, session_id):
+        """更新 react.subagents.robotic_arm_agent 段并写回 config。"""
+        if not isinstance(params, dict):
+            await channel.send_response(ws, req_id, ok=False, error="params must be object", code="BAD_REQUEST")
+            return
+
+        enabled_raw = params.get("enabled", False)
+        enabled = bool(enabled_raw) if isinstance(enabled_raw, bool) else False
+
+        step_executor_model = params.get("step_executor_model", "")
+        if not isinstance(step_executor_model, str):
+            await channel.send_response(
+                ws, req_id, ok=False, error="step_executor_model must be string", code="BAD_REQUEST"
+            )
+            return
+        step_executor_model = step_executor_model.strip()
+
+        step_executor_params = params.get("step_executor_params", {})
+        if step_executor_params is None:
+            step_executor_params = {}
+        if not isinstance(step_executor_params, dict):
+            await channel.send_response(
+                ws, req_id, ok=False, error="step_executor_params must be object", code="BAD_REQUEST"
+            )
+            return
+
+        if enabled and not step_executor_model:
+            await channel.send_response(
+                ws,
+                req_id,
+                ok=False,
+                error="step_executor_model is required when robotic_arm_agent is enabled",
+                code="BAD_REQUEST",
+            )
+            return
+
+        updates: dict[str, Any] = {
+            "enabled": enabled,
+            "step_executor_model": step_executor_model,
+            "step_executor_params": step_executor_params,
+        }
+        max_iterations = params.get("max_iterations")
+        if isinstance(max_iterations, (int, float)) and not isinstance(max_iterations, bool):
+            updates["max_iterations"] = int(max_iterations)
+
+        try:
+            update_robotic_arm_in_config(updates)
+            await _clear_agent_config_cache(_resolve(agent_client))
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[arm.set_config] 写回 config.yaml 失败: %s", e)
+            await channel.send_response(ws, req_id, ok=False, error=str(e), code="INTERNAL_ERROR")
+            return
+
+        await channel.send_response(ws, req_id, ok=True, payload=updates)
+
     async def _memory_compute(ws, req_id, params, session_id):
         if _HAS_PSUTIL:
             process = _psutil.Process()  # type: ignore[union-attribute]
@@ -4978,6 +5074,9 @@ def _register_web_handlers(bind: WebHandlersBindParams) -> None:
 
     channel.register_method("path.get", _path_get)
     channel.register_method("path.set", _path_set)
+
+    channel.register_method("arm.get_config", _arm_get_config)
+    channel.register_method("arm.set_config", _arm_set_config)
 
     async def _hooks_list(ws, req_id, params, session_id):
         from jiuwenswarm.common.hooks_config import load_hooks_config

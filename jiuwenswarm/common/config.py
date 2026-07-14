@@ -477,6 +477,22 @@ def update_browser_in_config(updates: dict[str, Any]) -> None:
     dump_yaml_round_trip(CONFIG_YAML_PATH, data)
 
 
+def update_robotic_arm_in_config(updates: dict[str, Any]) -> None:
+    """更新 react.subagents.robotic_arm_agent 段（step_executor_model/params 等）并写回。"""
+    data = load_yaml_round_trip(CONFIG_YAML_PATH)
+    if "react" not in data or data["react"] is None:
+        data["react"] = {}
+    react = data["react"]
+    if "subagents" not in react or react["subagents"] is None:
+        react["subagents"] = {}
+    subagents = react["subagents"]
+    if "robotic_arm_agent" not in subagents or subagents["robotic_arm_agent"] is None:
+        subagents["robotic_arm_agent"] = {}
+    section = subagents["robotic_arm_agent"]
+    _merge_config_dict(section, updates)
+    dump_yaml_round_trip(CONFIG_YAML_PATH, data)
+
+
 def update_context_engine_enabled_in_config(value: bool) -> None:
     """更新 react.context_engine_config.enabled（上下文压缩开关）并写回。"""
     data = load_yaml_round_trip(CONFIG_YAML_PATH)

@@ -22,7 +22,7 @@ import AgentDesignIcon from '../../assets/智能体.svg?react';
 import MoreDesignIcon from '../../assets/更多.svg?react';
 import { webRequest } from '../../services/webClient';
 
-type MainNavKey = 'chat' | 'skills' | 'agents' | 'teams' | 'sessions' | 'heartbeat' | 'cron' | 'channels' | 'extensions' | 'configpanel' | 'browserpanel' | 'updatepanel';
+type MainNavKey = 'chat' | 'skills' | 'agents' | 'teams' | 'sessions' | 'heartbeat' | 'cron' | 'channels' | 'extensions' | 'configpanel' | 'browserpanel' | 'roboticarmpanel' | 'updatepanel';
 
 interface SessionSidebarProps {
   activeNav: MainNavKey;
@@ -60,6 +60,16 @@ const moreNavItems: NavItem[] = [
   { key: 'extensions', labelKey: 'nav.extensions', icon: <PluginIcon aria-hidden /> },
   { key: 'browserpanel', labelKey: 'nav.browser', icon: <WebIcon aria-hidden /> },
   { key: 'configpanel', labelKey: 'nav.config', icon: <ConfigIcon aria-hidden /> },
+  {
+    key: 'roboticarmpanel',
+    labelKey: 'nav.roboticArm',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 20h4l1-6-3-4V6a2 2 0 012-2h2a2 2 0 012 2v2l3 3 3-1M9 14l3 6h5" />
+        <circle cx="6" cy="6" r="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
   { key: 'updatepanel', labelKey: 'nav.update', icon: <UpdateIcon aria-hidden /> },
 ];
 

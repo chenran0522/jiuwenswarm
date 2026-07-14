@@ -17,6 +17,7 @@ import { ToolPanel } from './components/ToolPanel';
 import { ConfigPanel } from './components/ConfigPanel';
 import { ChannelsPanel } from './components/ChannelsPanel';
 import { BrowserPanel } from './components/BrowserPanel';
+import { RoboticArmPanel } from './components/RoboticArmPanel';
 import { UpdatePanel } from './components/UpdatePanel';
 import { ExtensionsHubPanel } from './components/ExtensionsHubPanel';
 import {
@@ -79,7 +80,7 @@ import {
 import type { DesktopSaveApiResult } from './utils/desktopSave';
 import './App.css';
 
-type MainNavKey = 'chat' | 'skills' | 'agents' | 'teams' | 'sessions' | 'heartbeat' | 'cron' | 'channels' | 'extensions' | 'configpanel' | 'browserpanel' | 'updatepanel';
+type MainNavKey = 'chat' | 'skills' | 'agents' | 'teams' | 'sessions' | 'heartbeat' | 'cron' | 'channels' | 'extensions' | 'configpanel' | 'browserpanel' | 'roboticarmpanel' | 'updatepanel';
 
 type LoadedHistoryPage = {
   pageIdx: number;
@@ -2106,6 +2107,11 @@ function AppContent() {
         {activeNav === 'browserpanel' && (
           <div className="app-section">
             <BrowserPanel isConnected={isConnected} request={request} />
+          </div>
+        )}
+        {activeNav === 'roboticarmpanel' && (
+          <div className="app-section">
+            <RoboticArmPanel isConnected={isConnected} request={request} />
           </div>
         )}
         {FEATURE_APP_UPDATER_UI && activeNav === 'updatepanel' && (
