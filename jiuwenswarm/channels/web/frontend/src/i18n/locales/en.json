@@ -13,7 +13,8 @@
     "ok": "OK",
     "and": "and",
     "modify": "Modify",
-    "delete": "Delete"
+    "delete": "Delete",
+    "dismiss": "Dismiss"
   },
   "nav": {
     "chat": "Chat",
@@ -1821,6 +1822,18 @@
     "waitingTasks": "Waiting Tasks",
     "messageQueue": "Message Queue",
     "parallelProgress": "Parallel tasks running ({{completedCount}}/{{total}} complete)",
+    "arm": {
+      "title": "Robotic arm running",
+      "waitingForPlan": "Waiting for the robotic arm to report a plan...",
+      "photoHint": "Click to view full size",
+      "latestPhotoAlt": "Latest photo captured by the robotic arm",
+      "status": {
+        "pending": "Pending",
+        "inProgress": "In progress",
+        "done": "Done",
+        "failed": "Failed"
+      }
+    },
     "subtask": {
       "starting": "Starting...",
       "toolCall": "Calling {{tool}} (#{{count}})",

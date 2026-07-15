@@ -21,6 +21,9 @@ import {
   ContextCompressionRuntime,
   ContextCompressionSummary,
   TodoItem,
+  ArmSubTask,
+  ArmPhotoPayload,
+  ArmStepResultPayload,
 } from '../types';
 import { useTodoStore } from './todoStore';
 
@@ -61,6 +64,28 @@ export interface HistoryPagerMeta {
   totalPages: number;
 }
 
+const ARM_PHOTO_HISTORY_LIMIT = 4;
+
+/**
+ * 机械臂运行状态：单个会话同时只会有一个活跃的机械臂任务，
+ * 所以用单个对象而不是像 activeSubtasks 那样用 Map。
+ */
+export interface ArmPhotoItem {
+  imageBase64: string;
+  width: number;
+  height: number;
+  timestamp: number;
+}
+
+export interface ArmStatus {
+  subTasks: ArmSubTask[];
+  current: ArmSubTask | null;
+  resultText: string;
+  debugImageBase64: string | null;
+  photos: ArmPhotoItem[];
+  updatedAt: number;
+}
+
 /**
  * 单个 session 的对话运行态。
  * 原全局字段全部迁移到这里，按 session 隔离。
@@ -84,7 +109,8 @@ export interface ChatRuntime {
   /** 最近一次 chat.error 的错误信息，用于会话列表展示异常标记 */
   error: string | null;
   streamBuffers: Map<string, string>;
-  activeSubtasks: Map<string, SubtaskState>;
+  activeSubtasks: Map<string, SubtaskState>;  // 活跃的子任务
+  armStatus: ArmStatus | null;  // 机械臂子代理运行状态（步骤 + 最新照片）
   toolExecutions: Map<string, ToolExecution>;
   toolExecutionOrder: string[];
   orphanResults: Map<string, ToolResult>;
@@ -124,6 +150,7 @@ function createEmptyRuntime(): ChatRuntime {
     error: null,
     streamBuffers: new Map(),
     activeSubtasks: new Map(),
+    armStatus: null,
     toolExecutions: new Map(),
     toolExecutionOrder: [],
     orphanResults: new Map(),
@@ -196,6 +223,9 @@ interface ChatState {
   markTimedOutExecutions: (sessionId: string) => void;
   updateSubtask: (sessionId: string, payload: SubtaskUpdatePayload) => void;
   clearSubtasks: (sessionId: string) => void;
+  addArmPhoto: (sessionId: string, photo: ArmPhotoPayload) => void;
+  updateArmStep: (sessionId: string, step: ArmStepResultPayload) => void;
+  clearArmStatus: (sessionId: string) => void;
   clearMessages: (sessionId: string) => void;
   clearCurrentTurnData: (sessionId: string, requestId?: string) => void;
   prependMessages: (sessionId: string, olderFirst: Message[]) => void;
@@ -930,6 +960,75 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
+  addArmPhoto: (sessionId, photo) => {
+    set((state) => {
+      const runtime = state.runtimes[sessionId];
+      if (!runtime) return state;
+      const prevPhotos = runtime.armStatus?.photos ?? [];
+      const nextPhotos = [
+        ...prevPhotos,
+        {
+          imageBase64: photo.image_base64,
+          width: photo.width,
+          height: photo.height,
+          timestamp: Date.now(),
+        },
+      ].slice(-ARM_PHOTO_HISTORY_LIMIT);
+      return {
+        runtimes: {
+          ...state.runtimes,
+          [sessionId]: {
+            ...runtime,
+            armStatus: {
+              subTasks: runtime.armStatus?.subTasks ?? [],
+              current: runtime.armStatus?.current ?? null,
+              resultText: runtime.armStatus?.resultText ?? '',
+              debugImageBase64: runtime.armStatus?.debugImageBase64 ?? null,
+              photos: nextPhotos,
+              updatedAt: Date.now(),
+            },
+          },
+        },
+      };
+    });
+  },
+
+  updateArmStep: (sessionId, step) => {
+    set((state) => {
+      const runtime = state.runtimes[sessionId];
+      if (!runtime) return state;
+      return {
+        runtimes: {
+          ...state.runtimes,
+          [sessionId]: {
+            ...runtime,
+            armStatus: {
+              subTasks: step.sub_tasks,
+              current: step.current,
+              resultText: step.result_text,
+              debugImageBase64: step.debug?.overlay_image_base64 ?? runtime.armStatus?.debugImageBase64 ?? null,
+              photos: runtime.armStatus?.photos ?? [],
+              updatedAt: Date.now(),
+            },
+          },
+        },
+      };
+    });
+  },
+
+  clearArmStatus: (sessionId) => {
+    set((state) => {
+      const runtime = state.runtimes[sessionId];
+      if (!runtime) return state;
+      return {
+        runtimes: {
+          ...state.runtimes,
+          [sessionId]: { ...runtime, armStatus: null },
+        },
+      };
+    });
+  },
+
   clearCurrentTurnData: (sessionId, requestId) => {
     set((state) => {
       const runtime = state.runtimes[sessionId];
@@ -954,6 +1053,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               toolExecutionOrder: nextOrder,
               orphanResults: new Map(),
               activeSubtasks: new Map(),
+              armStatus: null,
               interruptResult: null,
               pendingQuestion: null,
               toolMetrics: {
@@ -973,6 +1073,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             toolExecutionOrder: [],
             orphanResults: new Map(),
             activeSubtasks: new Map(),
+            armStatus: null,
             interruptResult: null,
             pendingQuestion: null,
             toolMetrics: {
@@ -1028,6 +1129,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             interruptResult: null,
             switchingMode: false,
             activeSubtasks: new Map(),
+            armStatus: null,
             toolExecutions: new Map(),
             toolExecutionOrder: [],
             orphanResults: new Map(),

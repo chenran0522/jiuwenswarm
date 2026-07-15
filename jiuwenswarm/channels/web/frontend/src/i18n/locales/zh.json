@@ -13,7 +13,8 @@
     "ok": "确定",
     "and": "和",
     "modify": "修改",
-    "delete": "删除"
+    "delete": "删除",
+    "dismiss": "隐藏"
   },
   "nav": {
     "chat": "对话",
@@ -1822,6 +1823,18 @@
     "waitingTasks": "等待任务",
     "messageQueue": "消息队列",
     "parallelProgress": "并行任务执行中 ({{completedCount}}/{{total}} 完成)",
+    "arm": {
+      "title": "机械臂运行中",
+      "waitingForPlan": "等待机械臂上报任务计划...",
+      "photoHint": "点击查看大图",
+      "latestPhotoAlt": "机械臂最新拍摄的照片",
+      "status": {
+        "pending": "待执行",
+        "inProgress": "执行中",
+        "done": "已完成",
+        "failed": "失败"
+      }
+    },
     "subtask": {
       "starting": "启动中...",
       "toolCall": "调用 {{tool}} (#{{count}})",

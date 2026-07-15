@@ -24,6 +24,7 @@ import deleteIcon from '../../assets/delete.svg';
 import moveIcon from '../../assets/move.svg';
 import restartIcon from '../../assets/restart.svg';
 import { SubtaskProgress } from './SubtaskProgress';
+import { ArmActivityCard } from './ArmActivityCard';
 import { InlineQuestionCard } from './InlineQuestionCard';
 import { InteractionSlot } from '../InteractionSlot';
 import { HistoryPagerBar } from './HistoryPagerBar';
@@ -1066,6 +1067,7 @@ export function ChatPanel({
                     />
                   )}
                   <SubtaskProgress />
+                  <ArmActivityCard />
                   {/* 内联审批卡片（演进审批 & 权限审批共用） */}
                   <InlineQuestionCard onSubmit={onUserAnswer} />
                   {/* 思考中指示器 */}

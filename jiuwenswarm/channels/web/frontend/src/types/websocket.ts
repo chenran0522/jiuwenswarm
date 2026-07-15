@@ -120,6 +120,43 @@ export interface SubtaskUpdatePayload {
 }
 
 /**
+ * 机械臂子任务状态（openjiuwen report_plan 工具的 sub_tasks 项）
+ */
+export type ArmSubTaskStatus = 'pending' | 'in_progress' | 'done' | 'failed';
+
+export interface ArmSubTask {
+  id: string;
+  description: string;
+  status: ArmSubTaskStatus;
+  start_x?: number;
+  start_y?: number;
+  end_x?: number;
+  end_y?: number;
+}
+
+/**
+ * 机械臂拍照 Payload（arm.photo 事件，来自 VisionPerceptionRail 的 on_frame_captured）
+ */
+export interface ArmPhotoPayload {
+  image_base64: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * 机械臂步骤执行结果 Payload（arm.step_updated 事件，来自 StepExecutorRail 的 on_step_result）
+ */
+export interface ArmStepResultPayload {
+  sub_tasks: ArmSubTask[];
+  current: ArmSubTask | null;
+  result_text: string;
+  debug?: {
+    overlay_image_base64?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
+/**
  * 问题选项
  */
 export interface QuestionOption {

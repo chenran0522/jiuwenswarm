@@ -445,6 +445,18 @@ class JiuSwarmStreamEventRail(DeepAgentRail):
     # -- pause / resume / abort API for interface.py --
     # All methods accept session_id to scope state per-session on shared adapters.
 
+    def get_session(self, session_id: str) -> Session | None:
+        """Return the live ``Session`` bound to *session_id*, or None if unknown.
+
+        Lets callers outside the normal rail-callback flow (e.g. a sub-agent's
+        runtime-observability callback, which only receives a payload dict and
+        has no ``ctx.session`` of its own -- see ``robotic_arm_agent``'s
+        ``on_frame_captured``/``on_step_result``) resolve the session to push a
+        custom stream event to, given just the session id from
+        ``get_runtime_tool_session_id()``.
+        """
+        return self._main_sessions.get(session_id or "default")
+
     def _get_pause_event(self, sid: str) -> asyncio.Event:
         """Lazily get/create pause event for a session. Created events start in set (unpaused)."""
         event = self._pause_events.get(sid)

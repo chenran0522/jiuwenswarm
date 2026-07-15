@@ -23,7 +23,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import which
-from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, AsyncIterator, Awaitable, Callable, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from openjiuwen.harness.schema.config import SubAgentConfig
@@ -75,6 +75,7 @@ from openjiuwen.harness.rails.context_engineer.context_assemble_rail import Cont
 from openjiuwen.harness.rails.context_engineer.context_processor_rail import ContextProcessorRail
 from openjiuwen.harness.subagents.browser_agent import build_browser_agent_config
 from openjiuwen.harness.subagents.research_agent import build_research_agent_config
+from openjiuwen.core.session.stream import OutputSchema
 from openjiuwen.harness.subagents.robotic_arm_agent import build_robotic_arm_agent_config
 from openjiuwen.harness.tools.robotic_arm.config import RoboticArmRuntimeSettings
 from openjiuwen.harness.tools import (
@@ -1548,6 +1549,49 @@ class JiuWenSwarmDeepAdapter:
             return True  # no config → default enabled
         return subagent_cfg.get("enabled", True) is not False
 
+    def _build_robotic_arm_stream_callbacks(
+        self,
+    ) -> Tuple[Callable[[dict], Awaitable[None]], Callable[[dict], Awaitable[None]]]:
+        """Build on_frame_captured/on_step_result callbacks for RoboticArmRuntimeSettings.
+
+        Mirrors robotic-arm activity (photos + report_plan step status) to the
+        frontend as custom stream events, without threading session state
+        through TaskTool.
+
+        The robotic_arm_agent sub-agent runs via task_tool's synchronous
+        delegation, which never passes the parent session down (ctx.session is
+        None inside the sub-agent -- see JiuSwarmStreamEventRail.before_invoke).
+        These callbacks resolve the target session at call time instead, via
+        get_runtime_tool_session_id() -- a ContextVar bound fresh for every
+        process_message_*_impl call, which stays visible inside the
+        sub-agent's callbacks because task_tool delegation runs synchronously
+        within the same asyncio Task -- plus JiuSwarmStreamEventRail.get_session().
+        """
+
+        async def _on_frame_captured(payload: dict) -> None:
+            session_id = get_runtime_tool_session_id()
+            rail = self._stream_event_rail
+            session = rail.get_session(session_id) if rail is not None and session_id else None
+            if session is None:
+                return
+            try:
+                await session.write_stream(OutputSchema(type="arm.photo", index=0, payload=payload))
+            except Exception:
+                logger.debug("[JiuWenSwarmDeepAdapter] arm.photo emit failed", exc_info=True)
+
+        async def _on_step_result(payload: dict) -> None:
+            session_id = get_runtime_tool_session_id()
+            rail = self._stream_event_rail
+            session = rail.get_session(session_id) if rail is not None and session_id else None
+            if session is None:
+                return
+            try:
+                await session.write_stream(OutputSchema(type="arm.step_updated", index=0, payload=payload))
+            except Exception:
+                logger.debug("[JiuWenSwarmDeepAdapter] arm.step_updated emit failed", exc_info=True)
+
+        return _on_frame_captured, _on_step_result
+
     def _build_configured_subagents(
         self,
         model: Model,
@@ -1738,9 +1782,12 @@ class JiuWenSwarmDeepAdapter:
                     "is not configured; skipping robotic arm subagent registration"
                 )
             else:
+                on_frame_captured, on_step_result = self._build_robotic_arm_stream_callbacks()
                 arm_settings = RoboticArmRuntimeSettings(
                     step_executor_model=step_executor_model,
                     step_executor_params=dict(step_executor_params or {}),
+                    on_frame_captured=on_frame_captured,
+                    on_step_result=on_step_result,
                 )
                 subagents.append(
                     build_robotic_arm_agent_config(

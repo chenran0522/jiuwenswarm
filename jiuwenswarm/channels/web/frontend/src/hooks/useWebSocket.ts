@@ -28,6 +28,8 @@ import {
   ContextCompressionRuntime,
   ContextCompressionSummary,
   WsEvent,
+  ArmSubTask,
+  ArmStepResultPayload,
 } from '../types';
 import {
   ensureSessionRuntimes,
@@ -2063,6 +2065,32 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         }
         const todos = Array.isArray(payload.todos) ? payload.todos : [];
         useTodoStore.getState().setTodos(sessionId, todos as Parameters<ReturnType<typeof useTodoStore.getState>['setTodos']>[1]);
+      }),
+      webClient.on('arm.photo', ({ payload }) => {
+        const sessionId = resolveEventSessionId(payload);
+        if (!sessionId) return;
+        const imageBase64 = typeof payload.image_base64 === 'string' ? payload.image_base64 : '';
+        if (!imageBase64) return;
+        useChatStore.getState().addArmPhoto(sessionId, {
+          image_base64: imageBase64,
+          width: typeof payload.width === 'number' ? payload.width : 0,
+          height: typeof payload.height === 'number' ? payload.height : 0,
+        });
+      }),
+      webClient.on('arm.step_updated', ({ payload }) => {
+        const sessionId = resolveEventSessionId(payload);
+        if (!sessionId) return;
+        const subTasks = Array.isArray(payload.sub_tasks) ? payload.sub_tasks : [];
+        const current =
+          payload.current && typeof payload.current === 'object' ? payload.current : null;
+        const debug =
+          payload.debug && typeof payload.debug === 'object' ? payload.debug : null;
+        useChatStore.getState().updateArmStep(sessionId, {
+          sub_tasks: subTasks as ArmSubTask[],
+          current: current as ArmSubTask | null,
+          result_text: typeof payload.result_text === 'string' ? payload.result_text : '',
+          debug: debug as ArmStepResultPayload['debug'],
+        });
       }),
       webClient.on('context.usage', ({ payload }) => {
         const sessionId = resolveEventSessionId(payload);
