@@ -76,8 +76,12 @@ from openjiuwen.harness.rails.context_engineer.context_processor_rail import Con
 from openjiuwen.harness.subagents.browser_agent import build_browser_agent_config
 from openjiuwen.harness.subagents.research_agent import build_research_agent_config
 from openjiuwen.core.session.stream import OutputSchema
-from openjiuwen.harness.subagents.robotic_arm_agent import build_robotic_arm_agent_config
-from openjiuwen.harness.tools.robotic_arm.config import RoboticArmRuntimeSettings
+try:
+    from openjiuwen.harness.subagents.robotic_arm_agent import build_robotic_arm_agent_config
+    from openjiuwen.harness.tools.robotic_arm.config import RoboticArmRuntimeSettings
+except ImportError:  # robotic_arm_agent not available in this openjiuwen install.
+    build_robotic_arm_agent_config = None
+    RoboticArmRuntimeSettings = None
 from openjiuwen.harness.tools import (
     WebFetchWebpageTool,
     WebFreeSearchTool,
@@ -1765,7 +1769,13 @@ class JiuWenSwarmDeepAdapter:
         robotic_arm_agent_cfg = (
             subagents_cfg.get("robotic_arm_agent") if isinstance(subagents_cfg, dict) else {}
         )
-        if self._is_subagent_enabled(robotic_arm_agent_cfg):
+        if self._is_subagent_enabled(robotic_arm_agent_cfg) and build_robotic_arm_agent_config is None:
+            logger.warning(
+                "[JiuWenSwarmDeepAdapter] robotic_arm_agent enabled but this openjiuwen install "
+                "does not provide openjiuwen.harness.subagents.robotic_arm_agent; skipping "
+                "robotic arm subagent registration"
+            )
+        elif self._is_subagent_enabled(robotic_arm_agent_cfg):
             step_executor_model = (
                 str(robotic_arm_agent_cfg.get("step_executor_model") or "").strip()
                 if isinstance(robotic_arm_agent_cfg, dict)
