@@ -44,6 +44,24 @@ const SO101_REKEP_FIELDS: FieldSpec[] = [
   { key: 'vlm_model', labelKey: 'roboticArm.fields.vlmModel', kind: 'text', placeholder: 'anthropic/claude-opus-4.8' },
 ];
 
+// Reference values from the SO-101 + ReKep example rig (examples/robotic_arm/.env.example
+// in agent-core) -- NOT real paths on any particular machine. "Fill example values" seeds
+// the form with these so the panel can be saved/exercised without a physical rig; anyone
+// actually driving hardware still has to replace camera_matrix_path/depth_scale_path/
+// extrinsics_path/urdf_path/port/sam_checkpoint_path with their own rig's real files/port.
+const SO101_REKEP_EXAMPLE_VALUES: Record<string, string> = {
+  workspace_min: '0.05, -0.25, -0.05',
+  workspace_max: '0.45, 0.20, 0.30',
+  camera_matrix_path: '../calibration/intrinsics/camera_matrix.npy',
+  depth_scale_path: '../calibration/intrinsics/depth_scale.npy',
+  extrinsics_path: '../calibration/T_base_camera.npy',
+  urdf_path: '../so101.urdf',
+  port: '/dev/tty.usbmodem5B140297181',
+  sam_checkpoint_path: '../../mobile_sam.pt',
+  vlm_model: 'anthropic/claude-opus-4.8',
+};
+const SO101_REKEP_EXAMPLE_MAX_ITERATIONS = '30';
+
 function normalizeEnabled(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false;
   const data = payload as ArmConfigPayload;
@@ -170,6 +188,28 @@ export function RoboticArmPanel({ isConnected, request }: RoboticArmPanelProps) 
     if (error) setError(null);
   };
 
+  // Fills only the fields the user hasn't already typed something into --
+  // never overwrites an existing value. vlm_api_key is a real credential with
+  // no meaningful example, so it's left for the user to fill in by hand.
+  const handleFillExampleValues = () => {
+    setParams((prev) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(SO101_REKEP_EXAMPLE_VALUES)) {
+        const existing = next[key];
+        const isEmpty =
+          existing === undefined ||
+          existing === null ||
+          (typeof existing === 'string' && existing.trim() === '');
+        if (isEmpty) {
+          next[key] = key === 'workspace_min' || key === 'workspace_max' ? stringToVec3(value) ?? value : value;
+        }
+      }
+      return next;
+    });
+    setMaxIterations((prev) => (prev.trim() === '' ? SO101_REKEP_EXAMPLE_MAX_ITERATIONS : prev));
+    if (error) setError(null);
+  };
+
   // Keep the structured-field state and the raw-JSON editor in sync when the
   // user switches step_executor_model between a known and unknown vendor, so
   // edits made in one view aren't silently lost when the other is shown.
@@ -265,9 +305,10 @@ export function RoboticArmPanel({ isConnected, request }: RoboticArmPanelProps) 
   };
 
   return (
-    <div className="flex-1 min-h-0">
-      <div className="card w-full h-full flex flex-col overflow-y-auto">
-        <div className="flex items-center justify-between gap-4 mb-4">
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="card w-full flex-1 min-h-0 flex flex-col overflow-hidden !p-0">
+        {/* Header: fixed, never scrolls. */}
+        <div className="flex items-center justify-between gap-4 p-5 pb-0">
           <div>
             <h2 className="text-lg font-semibold">{t('roboticArm.title')}</h2>
             <p className="text-sm text-text-muted mt-1">{t('roboticArm.subtitle')}</p>
@@ -282,6 +323,8 @@ export function RoboticArmPanel({ isConnected, request }: RoboticArmPanelProps) 
           </button>
         </div>
 
+        {/* Scrollable body: everything else lives here, so the header/footer stay put. */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-5">
         {error ? (
           <div className="mb-4 rounded-md border border-[var(--border-danger)] bg-danger-subtle px-3 py-2 text-sm text-danger">
             {error}
@@ -335,11 +378,24 @@ export function RoboticArmPanel({ isConnected, request }: RoboticArmPanelProps) 
         </div>
 
         <div className="rounded-xl border border-border bg-card/70 backdrop-blur-sm overflow-hidden shadow-sm mt-4">
-          <div className="px-4 py-3 border-b border-border bg-secondary/30">
+          <div className="px-4 py-3 border-b border-border bg-secondary/30 flex items-center justify-between gap-2">
             <span className="text-xs text-text-muted tracking-wider font-medium">
               {t('roboticArm.paramsSectionTitle')}
             </span>
+            {isKnownVendor && (
+              <button
+                type="button"
+                onClick={handleFillExampleValues}
+                disabled={loading || saving}
+                className="text-xs text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              >
+                {t('roboticArm.fillExampleValues')}
+              </button>
+            )}
           </div>
+          {isKnownVendor && (
+            <div className="px-4 pt-3 text-xs text-text-muted">{t('roboticArm.exampleValuesHint')}</div>
+          )}
           <div className="p-4 space-y-4">
             {isKnownVendor ? (
               SO101_REKEP_FIELDS.map((field) => (
@@ -391,8 +447,9 @@ export function RoboticArmPanel({ isConnected, request }: RoboticArmPanelProps) 
             )}
           </div>
         </div>
-
-        <div className="flex items-center gap-2 mt-4">
+        </div>
+        {/* Footer: fixed, never scrolls -- Save/Cancel stay reachable regardless of scroll position. */}
+        <div className="flex items-center gap-2 p-5 pt-4 border-t border-border">
           <button
             type="button"
             className="btn !px-3 !py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"

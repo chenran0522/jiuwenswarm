@@ -1317,6 +1317,8 @@
     "enableDesc": "When enabled, tasks can be delegated to robotic_arm_agent from chat.",
     "modelHelp": "Name registered in SubTaskExecutorRegistry, e.g. so101_rekep.",
     "paramsSectionTitle": "Executor parameters (step_executor_params)",
+    "fillExampleValues": "Fill example values",
+    "exampleValuesHint": "These are reference values from the SO-101 example rig, not real paths on your machine -- fine for saving the form without a physical arm, but replace camera_matrix_path/depth_scale_path/extrinsics_path/urdf_path/port/sam_checkpoint_path with your own rig's real files before actually driving hardware (vlm_api_key is a credential -- fill it in yourself).",
     "rawParamsLabel": "Parameters (JSON)",
     "rawParamsHelp": "Unrecognized step_executor_model values fall back to raw JSON editing.",
     "save": "Save",

@@ -1318,6 +1318,8 @@
     "enableDesc": "启用后可在对话中委派给 robotic_arm_agent 执行操作任务。",
     "modelHelp": "SubTaskExecutorRegistry 中注册的名字，如 so101_rekep。",
     "paramsSectionTitle": "执行器参数（step_executor_params）",
+    "fillExampleValues": "填充示例值",
+    "exampleValuesHint": "以下是 SO-101 参考实现的示例值，不是你自己设备上的真实路径——没有物理机械臂时可以先填充示例值把表单保存掉；要实际操作硬件，请替换成你自己相机标定文件、URDF、串口等真实路径（vlm_api_key 是密钥，需要自己填）。",
     "rawParamsLabel": "参数（JSON）",
     "rawParamsHelp": "未识别的 step_executor_model 使用原始 JSON 编辑参数。",
     "save": "保存",
